@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generation of Moodle Question Bank containing same level questions and answers</title>
+    <style>
+        form {
+            border: none;
+
+        }
+
+        head {
+            width: 50px;
+            height: 20px;
+        }
+
+        h1 {
+            color: rgba(0, 0, 0, 15);
+        }
+
+        .label {
+            text-align: left;
+        }
+
+        .Q1 input {
+            width: 300pt;
+            height: 20pt;
+        }
+
+        .R1 input {
+            width: 300pt;
+            height: 20pt;
+
+        }
+
+        .table {
+
+            margin: 30px 9px;
+            border: 1px solid rgba(0, 0, 0, 15)
+        }
+
+        thead {
+            background-color: #f3f3f3;
+
+            text-align: left;
+        }
+
+        th, td {
+            padding: 15px 30px;
+        }
+
+        tbody, th, td, tr {
+            border: 1px solid #ddd;
+        }
+
+        .td {
+            border: 0cm;
+        }
+
+        .zontd {
+            border: 0cm;
+        }
+
+        .bttn input {
+            width: 80pt;
+            height: 20pt;
+            margin: 0px 20px;
+            background-color: #0f6fc5;
+            color: #fff;
+        }
+
+        #Generate {
+            width: 60pt;
+            height: 17pt;
+            margin: 0px 35px;
+            background-color: #0f6fc5;
+            color: #fff;
+        }
+        p{
+            color: red;
+        }
+        .cadr{
+              width: 450pt;   
+             border: 1px solid black;
+             padding: 10px;              
+            
+        }
+        .lang-menu {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lang-menu a {
+  display: block;
+  padding: 10px 20px;
+}
+
+.lang{
+  width: 75pc;
+  height: 40px;
+  background-color: #fff;
+  box-shadow: 0 0px 3px rgba(0, 0, 0, 10);
+
+}
+
+    </style>
+
+</head>
+<!--------------------------------------------------------------php--------------------------------------------------------------->
+
+<body>
+<nav class="lang">
+	<ul class="lang-menu">
+		<li><a href="pluginmoodle.php">English</a></li>
+		<li><a href="pluginmoodleArab.php">العربية</a></li>
+	  </ul>
+  </nav>
+    <center>
+
+        <?php
+        ////////////////////////////////////////////////SAVEASMOODLEXML///////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////SAVEASMOODLEXML///////////////////////////////////////////////////////////////////////////////////
+        // Vérification de la soumission du formulaire
+        if (isset($_POST['saveasmoodle'])) {
+            // Récupération des données saisies par l'utilisateur
+            $bank = $_POST['bank'];
+            $cols = $_POST['cols'];
+            $rows = $_POST['rows'];
+            $Question = $_POST['Question'];
+            $Reponse1 = $_POST['Reponse1'];
+            $nmbrans = $_POST['answer'];
+            $mark  =  $_POST['mark'];
+            // Création du document XML
+            $quizz = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><quiz></quiz>');
+        
+            // Ajout s à l'objet XML
+            $Q1 = $quizz->addChild('question');
+            $Q1->addAttribute('type', 'category');
+            $catgry= $Q1->addChild('category', '');
+            $textcat= $catgry->addChild('text', $bank);        
+        
+             //tableau de mot 
+             $tab=array();
+              for($i=1;$i<=$cols ;$i++){
+                  $tab[$i]=$_POST[ '1f' . $i ]; 
+               }
+               // NOMBRE DE QEUSTION
+              for($c=1;$c<=$rows;$c++){
+
+                $tablig=array();
+                for($i=1;$i<=$cols ;$i++){
+                    $tablig[$i]=$_POST[ $c.'f' . $i ];
+                }
+                $Questiontab  = explode(" ", $Question);
+
+
+
+               
+                $answerxml = array();
+                for ($a=1; $a<=$nmbrans; $a++) {
+                    $newrep = '';
+                   
+                    $rep = $_POST['Reponse'.$a];
+                    $prctg = $_POST['prctg'.$a];
+                    $answertab = explode(" ", $rep);
+                    $prctgg= '%'.$prctg;
+                    $newrep .= $prctgg . '';
+                    foreach ($answertab as $word) {
+                        for ($l = 1; $l <= $cols; $l++) {
+                            if ($word == $tab[$l]) {
+                                $word = $tablig[$l];
+                            }
+                        }
+                        $newrep .= $word . ' ';
+                    }
+                    if($a<$nmbrans){
+                        $fdy='~';
+                        $newrep .= $fdy . '';
+                    }
+                   
+                    $newrep = rtrim($newrep, '');
+                    $answerxml[] = $newrep;
+                }
+
+                $answerxmll =implode('', $answerxml);
+
+                $newQuestion = '';
+                foreach ($Questiontab as $word) {
+                    for ($l = 1; $l <= $cols; $l++) {
+                        if ($word == $tab[$l]) {
+                            $word = $tablig[$l];
+                        }
+                    }
+                    $newQuestion .= $word . ' ';
+                }
+        
+                $newQuestion = rtrim($newQuestion, ' ');
+        
+                $Q2 = $quizz->addChild('question');
+                $Q2->addAttribute('type', 'cloze');
+                $name=$Q2->addchild('name','');
+                $name->addchild('text','Question-'.$c.'');
+                $qtx= $Q2->addChild('questiontext', "");
+              $qtx->addchild('text',"  ".$newQuestion."{".$mark.":SHORTANSWER:".$answerxmll."}  ");
+              $Q2->addAttribute('texttype', 'text/html');
+            }
+                 
+            // Enregistrement du fichier XML
+            $quizz->asXML(''.$bank.'-Moodle.xml');
+        
+            // Message de confirmation
+          
+            echo ' <a href="'. $bank . '-Moodle.xml" download>The data has been saved. Download the file."  </a> ';
+
+        }
+        
+                
+
+
+        /////////////////////////////////////////////////////SAVEas/////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////SAVEAS///////////////////////////////////////////////////////////////////////////////////
+        // Vérification de la soumission du formulaire
+
+        if (isset($_POST['saveas'])) {
+           
+            // Récupération des données saisies par l'utilisateur
+            $saveass = $_POST['saveass'];
+            $bank = $_POST['bank'];
+            $cols = $_POST['cols'];
+            $rows = $_POST['rows'];
+            $Question = $_POST['Question'];
+            $Reponse1 = $_POST['Reponse1'];
+            $prctg  =  $_POST['prctg1'];
+            $nmbrans = $_POST['answer'];
+            $mark  =  $_POST['mark'];
+          
+
+
+            $i = 0;
+            $j = 0;
+            // Création du document XML
+
+            $quizz = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><QuestionsBank></QuestionsBank>');
+           
+             //tableau de mot 
+             $tab=array();
+             for($i=1;$i<=$cols ;$i++){
+             $tab[$i]=$_POST[ '1f' . $i ]; ; 
+           
+         }
+          //deveser la qustion en mots 
+        $Questiontab  = explode(" ", $Question);
+        //recomposer le text
+           for ($j = 0; $j < count($Questiontab); $j++) {
+                $fld=$Questiontab[$j];
+              for ($k = 1; $k <= count($tab); $k++) {
+                   if ($fld == $tab[$k]) {
+                    $Question = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#', $Question);
+                   }
+                   else {
+                    $Question = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $Question);
+
+                     }
+                }
+            }
+             //deveser la reponce  en mots 
+
+             $reptab  = explode(" ",$Reponse1);
+             //tableau de mot 
+            for ($j = 0; $j < count($reptab); $j++) {
+                 $fld=$reptab[$j];
+               for ($k = 1; $k <= count($tab); $k++) {
+                    if ($fld == $tab[$k]) {
+                        $Reponse1 = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#', $Reponse1);
+                    }
+                    else {
+                        $Reponse1 = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $Reponse1);
+
+                      }
+                 }
+             }
+
+            // Ajout à l'objet XML
+
+            $name = $quizz->addChild("name", $bank);
+            $nmbrof = $quizz->addChild("numberOfFiled", $cols);
+            $nmbrofQ = $quizz->addChild("numberOfSimilerQuestion", $rows);
+            
+            $qt = $quizz->addChild('QuestionText', $Question);
+
+            $mark = $quizz->addChild("totalGrad ", $mark);
+            $nmbranswer = $quizz->addChild("numberOfAnswer ", $nmbrans);
+            
+            //answer+attribut
+            $answer = $quizz->addChild('Answer ', $Reponse1);
+            $answer->addAttribute('value', $prctg);
+
+            for ($j = 2; $j <=$nmbrans; $j++) {
+                $answerr = $_POST['Reponse' . $j];
+                $prcntgg = $_POST['prctg' . $j];
+                $repptab  = explode(" ",$answerr);
+                for ($l = 0; $l < count($repptab); $l++) {
+                    $fld=$repptab[$l];
+                  
+                  for ($k = 1; $k <= count($tab); $k++) {
+                       if ($fld == $tab[$k]) {
+                        $answerr = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#',  $answerr);
+                       
+                       }
+                       else {
+                        $answerr = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $answerr);
+
+                         }
+                    }
+                }
+
+
+                $answerj = $quizz->addChild('Answer ', $answerr);
+                $answerj->addAttribute('value', $prcntgg);
+
+            }
+            for ($i=1;$i<=$rows;$i++){
+                $table_row = $quizz->addChild('Similar');
+                $table_row->addAttribute('id', $i);
+            for ($j=1;$j<=$cols;$j++){
+                $value = $_POST[ $i . 'f' . $j ];
+                $field = $table_row->addChild('Field ', $value);
+                $field->addAttribute('name', 'Field' . $j . ''); }
+
+
+          }
+
+            // Enregistrement du fichier XML
+            $quizz->asXML("" . $saveass . ".xml");
+              // Message de confirmation
+            // Téléchargement automatique du fichier XML
+            echo ' <a href="' . $saveass . '.xml" download>The data has been saved. Download the file."  </a> ';
+
+
+          
+        }
+        ////////////////////////////////////////////////SAVE///////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////SAVE///////////////////////////////////////////////////////////////////////////////////
+        // Vérification de la soumission du formulaire
+
+        if (isset($_POST['save'])) {
+
+            // Récupération des données saisies par l'utilisateur
+            $bank = $_POST['bank'];
+            $cols = $_POST['cols'];
+            $rows = $_POST['rows'];
+            $Question = $_POST['Question'];
+            $Reponse1 = $_POST['Reponse1'];
+            $prctg  =  $_POST['prctg1'];
+            $nmbrans = $_POST['answer'];
+            $mark  =  $_POST['mark'];
+            $i = 0;
+            $j = 0;
+            // Création du document XML
+
+            $quizz = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><QuestionsBank></QuestionsBank>');
+           
+           
+            //tableau de mot 
+            $tab=array();
+            for($i=1;$i<=$cols ;$i++){
+            $tab[$i]=$_POST[ '1f' . $i ]; ; 
+          
+        }
+
+        //deveser la qustion en mots 
+        $Questiontab  = explode(" ", $Question);
+        //recomposer le text
+           for ($j = 0; $j < count($Questiontab); $j++) {
+                $fld=$Questiontab[$j];
+              for ($k = 1; $k <= count($tab); $k++) {
+                   if ($fld == $tab[$k]) {
+                    $Question = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#', $Question);
+                   }
+                   else {
+                    $Question = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $Question);
+
+                     }
+                }
+            }
+             //deveser la reponce  en mots 
+
+             $reptab  = explode(" ",$Reponse1);
+             //tableau de mot 
+            for ($j = 0; $j < count($reptab); $j++) {
+                 $fld=$reptab[$j];
+               for ($k = 1; $k <= count($tab); $k++) {
+                    if ($fld == $tab[$k]) {
+                        $Reponse1 = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#', $Reponse1);
+                    }
+                    else {
+                        $Reponse1 = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $Reponse1);
+
+                      }
+                 }
+             }
+
+
+            // Ajout à l'objet XML
+            $name = $quizz->addChild("name", $bank);
+            $nmbrof = $quizz->addChild("numberOfFiled", $cols);
+            $nmbrofQ = $quizz->addChild("numberOfSimilerQuestion", $rows);
+            
+            $qt = $quizz->addChild('QuestionText', $Question);
+
+            $mark = $quizz->addChild("totalGrad ", $mark);
+            $nmbranswer = $quizz->addChild("numberOfAnswer ", $nmbrans);
+            
+            //answer+attribut
+            $answer = $quizz->addChild('Answer ', $Reponse1);
+            $answer->addAttribute('value', $prctg);
+           
+            for ($j = 2; $j <=$nmbrans; $j++) {
+                $answerr = $_POST['Reponse' . $j];
+                $prcntgg = $_POST['prctg' . $j];
+                $repptab  = explode(" ",$answerr);
+                for ($l = 0; $l < count($repptab); $l++) {
+                    $fld=$repptab[$l];
+                  
+                  for ($k = 1; $k <= count($tab); $k++) {
+                       if ($fld == $tab[$k]) {
+                        $answerr = preg_replace('/\b'.$fld.'\b/', '#%'.$k .'_'.$fld.'%#',  $answerr);
+                       }
+                       else {
+                        
+                        $answerr = preg_replace('/\b'.preg_quote($fld, '/').'\b/', $fld, $answerr);
+
+                         }
+                    }
+                }
+
+
+                $answerj = $quizz->addChild('Answer ', $answerr);
+                $answerj->addAttribute('value', $prcntgg);
+
+            }
+
+
+            for ($i=1;$i<=$rows;$i++){
+                $table_row = $quizz->addChild('Similar');
+                $table_row->addAttribute('id', $i);
+                for ($j=1;$j<=$cols;$j++){
+                    $value = $_POST[ $i . 'f' . $j ];
+                    $field = $table_row->addChild('Field ', $value);
+                    $field->addAttribute('name', 'Field' . $j . ''); }
+    
+    
+              }
+
+
+
+
+            // Enregistrement du fichier XML
+            $quizz->asXML("" . $bank . ".xml");
+
+            // Message de confirmation
+            echo ' <a href="' . $bank . '.xml" download>The data has been saved. Download the file."  </a> ';
+        }
+        ?>
+        <!-------------------------------------------------html------------------------------------------------------------------------->
+        <form method="post">
+        
+            <!--titre de l'interface-->
+            <h1>Generation of Moodle Question Bank containing same level questions and answers</h1>
+
+            <!-------------------------------------------------------------------------->
+            <!--choisir banc de question-->
+            <div class="banc">
+                <label for="banc" style="color: rgba(0, 0, 0, 15); font-size: 25px; " > Name of the question bank </label>
+                <input type="text" style="width: 160pt;height: 17pt;" name="bank" id="bank" value="<?php echo isset($_POST['bank']) ? $_POST['bank'] : ''; ?>"  placeholder=" name of question bank">
+            </div>
+            <br>
+
+            <!-------------------------------------------------------------------------->
+            <!--une zone pour les question-->
+             <label style="color: rgba(0, 0, 0, 15); font-size: 20px; " > Question MAp </label><nav class="cadr">
+                
+            <div class="Q1">
+
+                <label for="Question">Question text</label>
+                <input id="Question" type="text" name="Question"  onmouseup="copierMot()" value="<?php echo isset($_POST['Question']) ? $_POST['Question'] : ''; ?>" placeholder=" question text">
+                <label name="mark" for="mark1"> Mark</label> <input id=" mark1" type="number" min="0" max="20" name="mark" value="<?php echo isset($_POST['mark']) ? $_POST['mark'] : '1'; ?>" style="height: 20pt; width:  25pt;">
+            </div>
+            <br>
+
+            <!-------------------------------------------------------------------------->
+            <!--une zone poure les reponse-->
+            <div class="R1" id="monFormulaire">
+                <label for="answer1">Answer text 1</label>
+                <input id="answer1" type="text" name="Reponse1" onmouseup="copierMot()" value="<?php echo isset($_POST['Reponse1']) ? $_POST['Reponse1'] : ''; ?>" placeholder=" answer text">
+                <label for="mark1"> Prcg</label> <input id="mark1" type="text" name="prctg1" value="<?php echo isset($_POST['prctg']) ? $_POST['prctg'] : '100%'; ?>" style="height: 20pt; width:  26pt;"><br>
+                <br>
+            </div>
+            
+            <!-------------------------------------------------------------------------------------->
+            <!----------------php de generate  ----------------------->
+
+            <?php
+            if (isset($_POST['rows']) && isset($_POST['cols'])&& isset($_POST['answer'])) {
+                $answer = $_POST['answer'];
+                $rows = $_POST['rows'];
+                $cols = $_POST['cols'];
+                for ($j = 2; $j <= $answer; $j++) {
+                    $value2 = isset($_POST['prctg' . $j]) ? $_POST['prctg' . $j] : "100%";
+                    $value = isset($_POST['Reponse' . $j]) ? $_POST['Reponse' . $j] : "";
+                    echo '<label for="answer1">Answer text' . $j . '</label>';
+                    echo '<input id="answer ' . $j . '"   type="text" name = "Reponse' . $j . '"  value="' . $value . '"    onmouseup="copierMot()"  style=" width: 300pt ;height: 20pt; " placeholder=" answer text "> ';
+                    echo '<label for="mark' . $j . '"> Prcg</label> ';
+                    echo '<input id="mark' . $j . '"type="text"name="prctg' . $j . '" value="' . $value2 . '"  style="height: 20pt; width:  25pt;"><br>';
+                    echo '<br> ';
+                }
+                echo'</nav>';
+                echo '<br>';
+                echo '<br>';
+                
+
+                ////////////////////////////////////////////////////////////////////////////////////////////////
+                echo '<table border="1">';
+                echo '<thead>';
+                echo '<tr>';
+                for ($j = 1; $j <= $cols; $j++) {
+                    echo '<th>field' . $j . '</th>';
+                }
+                echo '<tr>';
+                echo '</thead>';
+
+                for ($i = 0; $i < $rows; $i++) {
+                    $f=$i+1;
+                    echo '<tr>';
+                    for ($j = 1; $j <= $cols; $j++) {
+                        $val = isset($_POST[ $f . 'f' . $j  ]) ? $_POST[ $f . 'f' . $j ] : "";
+                        echo '<td><input type="text" id="champCopie' . $i . '' . $j . '" value="'. $val.'"  name="' . $f . 'f' . $j . '" class="td"></td>';
+                        
+                    }
+                    echo '</tr>';
+                }
+                echo '</table>';
+                echo '<br>';
+            }
+            ?>
+         
+</nav>
+            <!-------------------------------------------------------------------------------------->
+            <!---------------nombre d'answer,fields ,questions et botton generate  ----------------------->
+
+            <!---------------nombre d'answer  ----------------------->
+            <br>
+            <label for="answer">Number of answers:</label>
+            <input type="number" name="answer" id="answer" style="width: 40pt; height: 15pt;" value="<?php echo isset($_POST['answer']) ? $_POST['answer'] : ''; ?>" >
+
+
+            <!---------------nombre de questions ----------------------->
+            <label for="rows">Number of similar questions:</label>
+            <input type="number" name="rows" id="rows" style="width: 40pt; height: 15pt;" value="<?php echo isset($_POST['rows']) ? $_POST['rows'] : ''; ?>" >
+
+            <!---------------nombre de fields ----------------------->
+            <label for="cols">Numbre of fields :</label>
+            <input type="number" name="cols" id="cols" style="width: 40pt; height: 15pt;" value="<?php echo isset($_POST['cols']) ? $_POST['cols'] : ''; ?>" >
+
+            <!---------------button generate ----------------------->
+            <input type="submit" name="Generate" value="Generate"  onmouseup="validerChamps(['cols', 'rows', 'answer'])" id="Generate">
+            <br><br>
+
+
+            <!-----------------------------------les 3 bottons---------------------------------->
+            <br><br>
+
+
+            <input type="button" value="Add content type" style="width: 100pt;height: 20pt; margin: 0px 35px;font-size: 2ch;background-color:#0f6fc5;color: #fff;">
+            <input type="button" value="Manage content type list" style="width: 115pt;height: 20pt; margin: 0px 35px;font-size: 2ch;background-color:#0f6fc5;color: #fff;">
+
+
+
+
+
+            <!-----------------------------------table22---------------------------------->
+            <br><br>
+            <table id="myTable">
+                <thead>
+                    <tr>
+                        <th>Field name</th>
+                        <th>Original content</th>
+                        <th>Content type</th>
+                    </tr>
+                </thead>
+                <tbody class="tbl2">
+                    <tr>
+                        <td><input class="td" value="field1"></td>
+                        <td><input name="field1" id="champCopie1" value="<?php echo  isset( $_POST['1f1']) ? $_POST['1f1'] : ""; ?>" class="td"> </td>
+                        <td><select id="langue" name="langue">
+                                <option>Teacher defined</option>
+                                <option>Integer[0, 0]</option>
+                                <option>Real[0.0, 0.0]</option>
+                                <option>Java Primitive Type</option>
+                                <option>Classified Host IP Adress</option>
+                                <option>UnClassified Host IP Adress</option>
+                                <option>Country Name</option>
+                                <option>Person name</option>
+                            </select> </td>
+                    </tr>
+                    <?php
+                    if (isset($_POST['rows']) && isset($_POST['cols'])) {
+                        $rows = $_POST['rows'];
+                        $cols = $_POST['cols'];
+                        ////////////////////////////////////////////////////////////////
+
+                        for ($i = 2; $i <= $cols; $i++) {
+                            echo '<tr>';
+                            for ($j = 1; $j <= 3; $j++) {
+
+                                if ($j == 1) {
+                                    echo '<td><input type="text" value="Field' . $i . '"   class="td"></td>';
+                                }
+                                $fff = isset( $_POST['1f' . $i]) ? $_POST['1f' . $i] : "";
+                                if ($j == 2) {
+                                    echo '<td><input type="text" value="'.$fff.'" name="field'.$i.'"  id="champCopie' . $i . '"   class="td"></td>';
+                                }
+                                if ($j == 3) {
+                                    echo '<td><select id="langue" name="langue"><option>Teacher defined</option><option>Integer[0, 0]</option><option>Real[0.0, 0.0]</option><option>Java Primitive Type</option><option>English java Primitive Type</option><option>Classified Host IP Adress</option><option>UnClassified Host IP Adress</option><option>Country Name</option><option>Person name</option><option>Teacher defined</option></select> </td>';
+                                }
+                            }
+                            echo '</tr>';
+                        }
+                    }
+                    ?>
+
+                </tbody>
+            </table>
+
+            <br>
+            <br><br><br><br>
+
+            <!-----------------------------------save---------------------------------->
+            <input type="submit" class="save" value="save" name="save" onmouseup="validerChamps(['bank','Question','answer1','mark1'])" style=" margin: 0px 35px;font-size: 2ch;background-color:#0f6fc5;color: #fff; width: 55pt;height: 17pt">
+
+            <!-----------------------------------SAVEAS---------------------------------->
+            <label for="saveass">Save as:</label> <input type="text" name="saveass" id="inptAs" value="<?php echo isset($_POST['saveass']) ? $_POST['saveass'] : ''; ?>"  style="width: 60pt; height: 17pt; background-color :#f3f3f3; border: 0cm; " placeholder=" name of folder"> <input type="submit" class="saveas" name="saveas" onmouseup="validerChamps(['bank','Question','answer1','mark1','inptAs'])" value="Save as " style="  font-size: 2ch;background-color:#0f6fc5;color: #fff; width: 50pt;height: 17pt">
+
+            <!-----------------------------------saveasmoodle--------------------------------->
+            <input type="submit" name="saveasmoodle" onmouseup="validerChamps(['bank','Question','answer1','mark1'])" value="Save as moodle XML" style="  margin: 0px 35px;font-size: 2ch;background-color:#0f6fc5;color: #fff; width: 130pt;height: 17pt">
+            </form>
+
+            <br> <br> <br>
+            <!-----------------------------------LOAD---------------------------------->
+            <form action="load.php" method="post">
+            <label for="Laod ">Laod:</label> <input type="text" name="laod" id="inputL" value="<?php echo isset($_POST['laod']) ? $_POST['laod'] : ''; ?>" style="width: 60pt; height: 17pt; background-color :#f3f3f3; border: 0cm; " placeholder=" name of folder"> <input type="submit" name="Load" value="Load" onmouseup="validerChamps(['inputL'])" style=" font-size: 2ch;background-color:#0f6fc5;color: #fff; width: 50pt;height: 17pt">
+
+            <!-----------------------------------new---------------------------------->
+
+            <a href="pluginmoodle.php" target="_blank"> <input type="button" class="new" value="New" style=" margin: 0px 35px;font-size: 2ch;background-color:#0f6fc5;color: #fff; width: 55pt;height: 17pt"></a>
+
+            <br><br>
+        </form>
+
+    </center>
+
+    <script>
+        //////////////////////////////////////java script//////////////////////////////////////////////////////////////////////////////
+        function copierMot() {
+            var numLines = parseInt(document.getElementById("cols").value);
+            var zero = 1;
+            var tab = [];
+            var motSelectionne = window.getSelection().toString().trim();
+            if (motSelectionne) {
+                var confirmation = confirm("Do you want to copy the word  \"" + motSelectionne + " \" in the field ?");
+                if (confirmation) {
+                    zero++;
+                    var compteur = 0;
+
+                    for (let index = 1; index <= numLines; index++) {
+
+                        const champId = document.getElementById("champCopie0" + index);
+                        const champId1 = document.getElementById("champCopie" + index);
+                        if (champId.value == '' && champId1.value == '') {
+                            compteur = index;
+
+                            break;
+                        }
+                    }
+                    if (compteur != 0) {
+                        const champ = document.getElementById("champCopie0" + compteur);
+                        const champ1 = document.getElementById("champCopie" + compteur);
+                        champ.value = motSelectionne;
+                        champ1.value = motSelectionne;
+                    } else {
+                        alert("The fields are filled  !");
+                    }
+                }
+            }
+        }
+        function validerChamps(ids) {
+      var valid = true;
+      for (var i = 0; i < ids.length; i++) {
+        var champNom = document.getElementById(ids[i]);
+        if (champNom.value == "") {
+          champNom.setCustomValidity("The field " + ids[i] + " is required");
+          champNom.reportValidity();
+          champNom.focus();
+          valid = false;
+        } else {
+          champNom.setCustomValidity("");
+        }
+      }
+      return valid;
+    }
+    </script>
+</body>
+
+</html>
